@@ -21,7 +21,7 @@ public:
 };
 
 struct VTable {
-    void (*printFunc)(void* obj);  
+    void (*printFunc[2])(void* obj);  
     TypeInfo* typeInfo;   
     int callOffset;
     int topOffset;      
@@ -35,9 +35,14 @@ public:
     static TypeInfo typeInfo;
     
     virtual ~Base() {}
-    virtual void print() 
+    void print() 
     { 
         std::cout << "Base" << std::endl; 
+    }
+
+    void print2() 
+    { 
+        std::cout << "Base2" << std::endl; 
     }
 
     virtual VTable* getVTable() {
@@ -47,8 +52,11 @@ public:
 
 TypeInfo Base::typeInfo("Base", "");
 VTable Base::vtable = {
-    [](void* obj) { static_cast<Base*>(obj)->print(); }, 
-    &Base::typeInfo, TypeInfo
+    {
+        [](void* obj) { static_cast<Base*>(obj)->print(); },
+        [](void* obj) { static_cast<Base*>(obj)->print2(); },
+    },
+    &Base::typeInfo, 
     0,
     0,
     0
@@ -62,9 +70,14 @@ public:
     static TypeInfo typeInfo;
     
     virtual ~Derived() {}
-    virtual void print() 
+    void print() 
     { 
         std::cout << "Derived" << std::endl; 
+    }
+
+    void print2() 
+    { 
+        std::cout << "Derived2" << std::endl; 
     }
 
     virtual VTable* getVTable() {
@@ -74,21 +87,30 @@ public:
 
 TypeInfo Derived::typeInfo("Derived", "Base");
 VTable Derived::vtable = {
-    [](void* obj) { static_cast<Derived*>(obj)->print(); }, 
+    {
+        [](void* obj) { static_cast<Derived*>(obj)->print(); }, 
+        [](void* obj) { static_cast<Derived*>(obj)->print2(); },
+    },
     &Derived::typeInfo, 
     sizeof(Base),
     0,
     0
 };
+int index = 0;
+template <typename t>
+void print(t* obj) {
+    VTable* vtbl = obj->getVTable();
+    vtbl->printFunc[index](obj);
+}
+
 
 int main() {
     Base* obj = new Derived();
-
-    
+   
     VTable* vtbl = obj->getVTable();
-
     
-    vtbl->printFunc(obj); 
+    print(obj);
+
    
     vtbl->typeInfo->print(); 
 
